@@ -1,0 +1,55 @@
+name: newsflash
+base: core20 # the base snap is the execution environment for this snap
+adopt-info: newsflash
+
+grade: stable
+confinement: strict
+
+slots:
+  newslfash:
+    interface: dbus
+    bus: session
+    name: com.gitlab.newsflash
+
+parts:
+  newsflash:
+    plugin: meson
+    build-environment:
+      - MERCURY_PARSER_USER: "newsflash"
+      - MERCURY_PARSER_KEY: "ypsSXCLhJngks9qGUAqShd8JjRaZ824wT3e"
+    parse-info: [usr/local/share/metainfo/com.gitlab.newsflash.appdata.xml]
+    source: https://gitlab.com/news-flash/news_flash_gtk.git
+    #source-tag: "1.4.0"
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version "$(git describe --tag)"
+    override-build: |
+      curl https://sh.rustup.rs -sSf | sh -s -- -y
+      . $HOME/.cargo/env
+      rustup toolchain install nightly
+      rustup default nightly
+      snapcraftctl build
+      sed -i 's|Icon=.*|Icon=${SNAP}/usr/local/share/icons/hicolor/scalable/apps/com.gitlab.newsflash.svg|g' \
+        $SNAPCRAFT_PART_INSTALL/usr/local/share/applications/com.gitlab.newsflash.desktop
+    build-packages:
+      - build-essential
+      - pkg-config
+      - curl
+      - meson
+      - cargo
+      - libhandy-0.0-dev
+      - libsqlite3-dev
+      - libssl-dev
+      - libwebkit2gtk-4.0-dev
+      - libgtk-3-dev
+
+apps:
+  newsflash:
+    extensions: [gnome-3-38]
+    common-id: com.gitlab.newsflash
+    desktop: usr/local/share/applications/com.gitlab.newsflash
+    command: usr/local/bin/com.gitlab.newsflash
+    plugs:
+      - home
+      - network
+      - audio-playback
